@@ -2,114 +2,169 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <!-- Ensures the layout is responsive on mobile devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
   <style>
+    /* Overall page styling with a water-inspired gradient */
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
       margin: 0;
-      background: #f7f7f7;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #a0d8ef, #f0f8ff);
+      color: #333;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
       height: 100vh;
+      transition: background-color 0.3s;
     }
-    #display {
-      font-size: 2em;
-      margin: 20px;
-      width: 100%;
+    
+    /* Main container uses flexbox to space the display and buttons */
+    .container {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      justify-content: space-between;
     }
-    #display div {
-      width: 100%;
+    
+    /* Display area (time and cost) is centered and takes available space */
+    .display {
       text-align: center;
+      margin-top: 20px;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
     }
-    button {
-      font-size: 1em;
+    
+    /* Time display styling */
+    #time {
+      font-size: 2em;
+      margin-bottom: 20px;
+    }
+    
+    /* Cost display takes the full width of the device */
+    #cost {
+      font-size: 4em;
+      width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    
+    /* Footer for the control buttons at the bottom */
+    .footer {
+      text-align: center;
+      padding: 10px;
+      background: #e0f7fa;
+      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Button styling */
+    .footer button {
+      font-size: 1.2em;
+      margin: 10px;
       padding: 10px 20px;
-      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      background: #0288d1;
+      color: white;
       cursor: pointer;
+      transition: background 0.3s;
     }
-
-    /* Media query for mobile devices */
-    @media (max-width: 600px) {
-      body {
-        height: 100vh;
-      }
-      #display {
-        font-size: 4em;
-      }
-      button {
-        font-size: 2em;
-        padding: 20px 40px;
-      }
+    
+    .footer button:disabled {
+      background: #90caf9;
+      cursor: not-allowed;
+    }
+    
+    .footer button:hover:not(:disabled) {
+      background: #0277bd;
+    }
+    
+    /* Flashing warning animation (for both the cost display and overall background) */
+    @keyframes flash {
+      0%, 100% { background-color: inherit; }
+      50% { background-color: #ffcccc; }
+    }
+    
+    /* The "warning" class triggers the flashing animation */
+    .warning {
+      animation: flash 1s infinite;
     }
   </style>
 </head>
 <body>
-  <h1>Shower Energy Cost Stopwatch</h1>
-  <div id="display">
-    <div id="time">00:00:00</div>
-    <div id="cost">£0.00</div>
-  </div>
-  <div>
-    <button id="startBtn">Start</button>
-    <button id="stopBtn" disabled>Stop</button>
-    <button id="resetBtn">Reset</button>
+  <div class="container">
+    <!-- Display area: shows the running time and full-width cost -->
+    <div class="display">
+      <div id="time">00:00:00</div>
+      <div id="cost">£0.00</div>
+    </div>
+    <!-- Footer: holds the control buttons which always remain at the bottom -->
+    <div class="footer">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <button id="resetBtn">Reset</button>
+    </div>
   </div>
 
   <script>
-    // Variables to track time
+    // Track start time, accumulated elapsed time, and the timer interval.
     let startTime, elapsedTime = 0, timerInterval;
 
-    // Cost calculation:
-    // 29 kW boiler * 6.41p per kWh = 185.89 pence per hour, i.e. £1.8589 per hour.
-    // Therefore, cost per second:
-    const costPerSecond = 1.8589 / 3600; // ≈ 0.0005164 £ per second
+    // Cost Calculation:
+    // A 29 kW boiler costs 6.41p/kWh which gives £1.8589 per hour.
+    // Cost per second = £1.8589 / 3600 ≈ £0.0005164 per second.
+    const costPerSecond = 1.8589 / 3600;
 
-    // DOM elements
+    // Get DOM elements
     const timeDisplay = document.getElementById("time");
     const costDisplay = document.getElementById("cost");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
 
-    // Function to update the stopwatch display and cost
+    // Update the stopwatch display and cost
     function updateDisplay() {
-      // Calculate total elapsed time (in milliseconds)
       let currentTime = Date.now();
-      let time = (currentTime - startTime) + elapsedTime;
+      let timeElapsed = (currentTime - startTime) + elapsedTime;
 
-      // Convert milliseconds into hours, minutes, seconds
-      let hours = Math.floor(time / (1000 * 60 * 60));
-      let minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
-      let seconds = Math.floor((time % (1000 * 60)) / 1000);
+      // Convert milliseconds to hours, minutes, seconds.
+      let hours = Math.floor(timeElapsed / (1000 * 60 * 60));
+      let minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+      let seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
 
-      // Update time display with leading zeros
-      timeDisplay.textContent = 
-        String(hours).padStart(2, '0') + ":" + 
-        String(minutes).padStart(2, '0') + ":" + 
+      // Update the time display (always with two digits per unit)
+      timeDisplay.textContent =
+        String(hours).padStart(2, '0') + ":" +
+        String(minutes).padStart(2, '0') + ":" +
         String(seconds).padStart(2, '0');
 
-      // Calculate energy cost based on total seconds elapsed
-      let totalSeconds = time / 1000;
+      // Calculate energy cost based on elapsed seconds
+      let totalSeconds = timeElapsed / 1000;
       let cost = totalSeconds * costPerSecond;
       costDisplay.textContent = "£" + cost.toFixed(2);
+
+      // If the cost is over £0.50, add a flashing warning to the screen and cost display.
+      if (cost >= 0.50) {
+        document.body.classList.add('warning');
+        costDisplay.classList.add('warning');
+      } else {
+        document.body.classList.remove('warning');
+        costDisplay.classList.remove('warning');
+      }
     }
 
-    // Start button functionality
+    // Start the timer and update the display each second.
     startBtn.addEventListener("click", function() {
       startTime = Date.now();
-      timerInterval = setInterval(updateDisplay, 1000); // update every second
+      timerInterval = setInterval(updateDisplay, 1000);
       startBtn.disabled = true;
       stopBtn.disabled = false;
     });
 
-    // Stop button functionality
+    // Stop the timer and accumulate the elapsed time.
     stopBtn.addEventListener("click", function() {
       clearInterval(timerInterval);
       elapsedTime += Date.now() - startTime;
@@ -117,12 +172,14 @@
       stopBtn.disabled = true;
     });
 
-    // Reset button functionality
+    // Reset the timer, cost, and remove any warning animation.
     resetBtn.addEventListener("click", function() {
       clearInterval(timerInterval);
       elapsedTime = 0;
       timeDisplay.textContent = "00:00:00";
       costDisplay.textContent = "£0.00";
+      document.body.classList.remove('warning');
+      costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
