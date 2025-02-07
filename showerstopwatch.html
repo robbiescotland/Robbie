@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- Ensures the layout is responsive on mobile devices -->
+  <!-- Ensure the layout is responsive on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
   <style>
@@ -48,7 +48,7 @@
     
     /* Cost display: large text that scales with viewport width */
     #cost {
-      font-size: 10vw;
+      font-size: 20vw;
       width: 100%;
       padding: 20px 0;
       text-align: center;
@@ -103,7 +103,7 @@
 <body>
   <div class="container">
     <div class="display">
-      <div id="time">00:00:00.000</div>
+      <div id="time">00h 00m 00s</div>
       <div id="cost">0.00p</div>
     </div>
   </div>
@@ -149,10 +149,10 @@
         fontFamily: "Impact, sans-serif",
         costColor: "#000000"
       },
-      { // Rainbow Pride
+      { // Rainbow Pride (adjusted for contrast)
         name: "Rainbow Pride",
         bodyBackground: "linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)",
-        bodyColor: "#ffffff",
+        bodyColor: "#000000",
         fontFamily: "Arial, sans-serif",
         costColor: "#000000"
       },
@@ -191,12 +191,12 @@
         fontFamily: "Lucida Console, monospace",
         costColor: "#000000"
       },
-      { // LGBT Mosaic
+      { // LGBT Mosaic (adjusted for contrast)
         name: "LGBT Mosaic",
         bodyBackground: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
-        bodyColor: "#ffffff",
+        bodyColor: "#000000",
         fontFamily: "Trebuchet MS, sans-serif",
-        costColor: "#ffffff"
+        costColor: "#000000"
       }
     ];
     
@@ -230,24 +230,22 @@
       let currentTime = Date.now();
       let timeElapsed = (currentTime - startTime) + elapsedTime;
       
-      // Calculate hours, minutes, seconds, and milliseconds
+      // Calculate hours, minutes, and seconds
       let hours = Math.floor(timeElapsed / (1000 * 60 * 60));
       let minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
       let seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-      let milliseconds = timeElapsed % 1000;
       
-      // Format the time as HH:MM:SS.mmm
+      // Format the time as "HHh MMm SSs"
       timeDisplay.textContent =
-        String(hours).padStart(2, '0') + ":" +
-        String(minutes).padStart(2, '0') + ":" +
-        String(seconds).padStart(2, '0') + "." +
-        String(milliseconds).padStart(3, '0');
+        String(hours).padStart(2, '0') + "h " +
+        String(minutes).padStart(2, '0') + "m " +
+        String(seconds).padStart(2, '0') + "s";
       
       // Calculate energy cost (in pounds)
       let totalSeconds = timeElapsed / 1000;
       let cost = totalSeconds * costPerSecond;
       
-      // If cost is less than £1, display as pence with two decimals; else as pounds
+      // Display cost as pence with two decimals until £1 is reached
       if (cost < 1) {
         let pence = (cost * 100).toFixed(2);
         costDisplay.textContent = pence + "p";
@@ -283,7 +281,7 @@
     resetBtn.addEventListener("click", function() {
       clearInterval(timerInterval);
       elapsedTime = 0;
-      timeDisplay.textContent = "00:00:00.000";
+      timeDisplay.textContent = "00h 00m 00s";
       costDisplay.textContent = "0.00p";
       document.body.classList.remove('warning');
       costDisplay.classList.remove('warning');
