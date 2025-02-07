@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Shower Energy Cost Stopwatch</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+      background: #f7f7f7;
+    }
+    #display {
+      font-size: 2em;
+      margin: 20px;
+    }
+    button {
+      font-size: 1em;
+      padding: 10px 20px;
+      margin: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Shower Energy Cost Stopwatch</h1>
+  <div id="display">
+    <div id="time">00:00:00</div>
+    <div id="cost">£0.00</div>
+  </div>
+  <div>
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+
+  <script>
+    // Variables to track time
+    let startTime, elapsedTime = 0, timerInterval;
+
+    // Cost calculation:
+    // 29 kW boiler * 6.41p per kWh = 185.89 pence per hour, i.e. £1.8589 per hour.
+    // Therefore, cost per second:
+    const costPerSecond = 1.8589 / 3600; // ≈ 0.0005164 £ per second
+
+    // DOM elements
+    const timeDisplay = document.getElementById("time");
+    const costDisplay = document.getElementById("cost");
+    const startBtn = document.getElementById("startBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    // Function to update the stopwatch display and cost
+    function updateDisplay() {
+      // Calculate total elapsed time (in milliseconds)
+      let currentTime = Date.now();
+      let time = (currentTime - startTime) + elapsedTime;
+
+      // Convert milliseconds into hours, minutes, seconds
+      let hours = Math.floor(time / (1000 * 60 * 60));
+      let minutes = Math.floor((time % (1000 * 60 * 60)) / (1000 * 60));
+      let seconds = Math.floor((time % (1000 * 60)) / 1000);
+
+      // Update time display with leading zeros
+      timeDisplay.textContent = 
+        String(hours).padStart(2, '0') + ":" + 
+        String(minutes).padStart(2, '0') + ":" + 
+        String(seconds).padStart(2, '0');
+
+      // Calculate energy cost based on total seconds elapsed
+      let totalSeconds = time / 1000;
+      let cost = totalSeconds * costPerSecond;
+      costDisplay.textContent = "£" + cost.toFixed(2);
+    }
+
+    // Start button functionality
+    startBtn.addEventListener("click", function() {
+      startTime = Date.now();
+      timerInterval = setInterval(updateDisplay, 1000); // update every second
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    });
+
+    // Stop button functionality
+    stopBtn.addEventListener("click", function() {
+      clearInterval(timerInterval);
+      elapsedTime += Date.now() - startTime;
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+
+    // Reset button functionality
+    resetBtn.addEventListener("click", function() {
+      clearInterval(timerInterval);
+      elapsedTime = 0;
+      timeDisplay.textContent = "00:00:00";
+      costDisplay.textContent = "£0.00";
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    });
+  </script>
+</body>
+</html>
