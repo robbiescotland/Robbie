@@ -2,9 +2,11 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- Ensure the layout is responsive -->
+  <!-- Responsive layout -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
+  <!-- SoundCloud Widget API -->
+  <script src="https://w.soundcloud.com/player/api.js"></script>
   <style>
     /* Base styles for the fixed pink theme */
     body {
@@ -16,7 +18,7 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      transition: background 0.3s, color 0.3s, font-family 0.3s;
+      transition: background 0.3s, color 0.3s;
     }
     /* Container for the main display */
     .container {
@@ -111,6 +113,13 @@
       font-size: 1.5em;
       margin: 0;
     }
+    /* Hide the SoundCloud player off-screen */
+    #sc-widget {
+      position: absolute;
+      left: -9999px;
+      width: 1px;
+      height: 1px;
+    }
   </style>
 </head>
 <body>
@@ -124,11 +133,12 @@
     <p>Please rotate your screen to landscape to begin.</p>
   </div>
 
-  <!-- Hidden audio element for background music -->
-  <audio id="bgMusic" loop>
-    <source src="abracadabra.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-  </audio>
+  <!-- Hidden SoundCloud widget -->
+  <iframe 
+    id="sc-widget" 
+    allow="autoplay" 
+    src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fon.soundcloud.com%2FBryMGUqFBBU1MZkS8&auto_play=false&loop=true">
+  </iframe>
   
   <div class="container">
     <div class="display">
@@ -170,7 +180,9 @@
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
-    const bgMusic = document.getElementById("bgMusic");
+
+    // Initialize the SoundCloud widget using the API
+    const scWidget = SC.Widget(document.getElementById('sc-widget'));
     
     // --- Stopwatch and Display Update ---
     function updateDisplay() {
@@ -221,10 +233,8 @@
       timerInterval = setInterval(updateDisplay, 50); // update every 50ms
       startBtn.disabled = true;
       stopBtn.disabled = false;
-      // Start playing the music (user gesture allows autoplay)
-      bgMusic.play().catch(err => {
-        console.error("Error playing audio:", err);
-      });
+      // Start playing the SoundCloud track via the widget
+      scWidget.play();
     });
     
     stopBtn.addEventListener("click", function() {
@@ -232,8 +242,8 @@
       elapsedTime += Date.now() - startTime;
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Optionally, pause the music when stopped
-      bgMusic.pause();
+      // Pause the SoundCloud track
+      scWidget.pause();
     });
     
     resetBtn.addEventListener("click", function() {
@@ -245,9 +255,9 @@
       costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Reset the music playback
-      bgMusic.pause();
-      bgMusic.currentTime = 0;
+      // Reset the SoundCloud track playback
+      scWidget.pause();
+      scWidget.seekTo(0);
     });
   </script>
 </body>
