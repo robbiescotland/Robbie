@@ -2,25 +2,23 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- Ensure the layout is responsive on mobile devices -->
+  <!-- Ensure the layout is responsive -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
   <style>
-    /* Base styles */
+    /* Base styles for the fixed pink theme */
     body {
       margin: 0;
       padding: 0;
-      font-family: sans-serif;
-      /* Default water-inspired background */
-      background: #a0d8ef;
-      color: #333;
+      font-family: "Impact", sans-serif;
+      background: #ff4081; /* Pink background */
+      color: #ffffff;      /* White text */
       display: flex;
       flex-direction: column;
       height: 100vh;
       transition: background 0.3s, color 0.3s, font-family 0.3s;
     }
-    
-    /* Container for the main display; bottom padding prevents overlap with fixed footer */
+    /* Container for the main display */
     .container {
       flex: 1;
       width: 100%;
@@ -28,79 +26,110 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding-bottom: 80px;
+      padding-bottom: 80px; /* Prevents overlap with fixed footer */
     }
-    
-    /* Display area takes full width */
     .display {
       width: 100%;
       text-align: center;
       padding: 20px;
     }
-    
-    /* Time display (clickable to change themes) */
+    /* Time display: labeled with h, m, s */
     #time {
       font-size: 4vw;
       margin-bottom: 10px;
-      cursor: pointer;
       width: 100%;
     }
-    
-    /* Cost display: large text that scales with viewport width */
+    /* Cost display: very large and scales with viewport width */
     #cost {
       font-size: 20vw;
       width: 100%;
       padding: 20px 0;
       text-align: center;
     }
-    
-    /* Fixed footer so the buttons remain visible at all times */
+    /* Fixed footer so the buttons always remain visible */
     .footer {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
-      background: #e0f7fa;
+      background: rgba(0, 0, 0, 0.2);
       text-align: center;
       padding: 10px 0;
-      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
       z-index: 100;
     }
-    
-    /* Button styling */
     .footer button {
       font-size: 1.2em;
       margin: 5px;
       padding: 10px 20px;
       border: none;
       border-radius: 5px;
-      background: #0288d1;
-      color: white;
+      background: #ffffff;
+      color: #ff4081;
       cursor: pointer;
       transition: background 0.3s;
     }
-    
     .footer button:disabled {
-      background: #90caf9;
+      background: #f8f8f8;
+      color: #ccc;
       cursor: not-allowed;
     }
-    
     .footer button:hover:not(:disabled) {
-      background: #0277bd;
+      background: #f0f0f0;
     }
-    
-    /* Flashing warning animation */
+    /* Flashing warning if cost ≥ 50p (i.e., cost in pounds ≥ 0.50) */
     @keyframes flash {
       0%, 100% { background-color: inherit; }
       50% { background-color: #ffcccc; }
     }
-    
     .warning {
       animation: flash 1s infinite;
+    }
+    /* Overlay to instruct rotation (visible in portrait mode) */
+    #rotateOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    #rotateOverlay svg {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+    }
+    #rotateOverlay p {
+      font-size: 1.5em;
+      margin: 0;
     }
   </style>
 </head>
 <body>
+  <!-- Overlay instructing rotation (visible if in portrait mode) -->
+  <div id="rotateOverlay">
+    <!-- Inline SVG rotate icon -->
+    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <path d="M32 8a24 24 0 1 0 24 24h-4a20 20 0 1 1-20-20V8z" fill="none" stroke="white" stroke-width="4"/>
+      <polyline points="32,0 32,8 40,8" fill="none" stroke="white" stroke-width="4"/>
+    </svg>
+    <p>Please rotate your screen to landscape to begin.</p>
+  </div>
+
+  <!-- Hidden audio element for background music -->
+  <audio id="bgMusic" loop>
+    <source src="abracadabra.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+  
   <div class="container">
     <div class="display">
       <div id="time">00h 00m 00s</div>
@@ -114,10 +143,26 @@
   </div>
   
   <script>
+    // --- Orientation Check: Show/hide rotate overlay ---
+    function checkOrientation() {
+      const overlay = document.getElementById("rotateOverlay");
+      if (window.innerWidth < window.innerHeight) {
+        // Portrait mode: show overlay
+        overlay.style.display = "flex";
+      } else {
+        // Landscape mode: hide overlay
+        overlay.style.display = "none";
+      }
+    }
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    checkOrientation(); // Check on load
+
     // --- Timer and Cost Calculation Variables ---
     let startTime, elapsedTime = 0, timerInterval;
-    // The boiler: 29 kW at 6.41p/kWh gives about £1.8589 per hour.
-    // Thus, cost per second in pounds:
+    // Calculation:
+    // 29 kW boiler at 6.41p/kWh ≈ £1.8589 per hour
+    // => Cost per second (in pounds): 1.8589/3600
     const costPerSecond = 1.8589 / 3600;
     
     const timeDisplay = document.getElementById("time");
@@ -125,105 +170,7 @@
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
-    
-    // --- Themes Array (10 Themes) ---
-    const themes = [
-      { // Cats theme
-        name: "Cats",
-        bodyBackground: "#fdf6e3",
-        bodyColor: "#657b83",
-        fontFamily: "'Comic Sans MS', cursive",
-        costColor: "#b58900"
-      },
-      { // Wicked theme
-        name: "Wicked",
-        bodyBackground: "#004225",
-        bodyColor: "#fefefe",
-        fontFamily: "Georgia, serif",
-        costColor: "#ff4500"
-      },
-      { // Lady Gaga theme
-        name: "Lady Gaga",
-        bodyBackground: "#ff4081",
-        bodyColor: "#ffffff",
-        fontFamily: "Impact, sans-serif",
-        costColor: "#000000"
-      },
-      { // Rainbow Pride (adjusted for contrast)
-        name: "Rainbow Pride",
-        bodyBackground: "linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)",
-        bodyColor: "#000000",
-        fontFamily: "Arial, sans-serif",
-        costColor: "#000000"
-      },
-      { // Trans Pride
-        name: "Trans Pride",
-        bodyBackground: "linear-gradient(to right, #5BCEFA, #F5A9B8, #ffffff, #F5A9B8, #5BCEFA)",
-        bodyColor: "#333333",
-        fontFamily: "Helvetica, sans-serif",
-        costColor: "#000000"
-      },
-      { // Bisexual theme
-        name: "Bisexual",
-        bodyBackground: "linear-gradient(to right, #D60270, #9B4F96, #0038A8)",
-        bodyColor: "#ffffff",
-        fontFamily: "Verdana, sans-serif",
-        costColor: "#ffffff"
-      },
-      { // Non-Binary theme
-        name: "Non-Binary",
-        bodyBackground: "linear-gradient(to right, #FFF430, #FFFFFF, #9C59D1)",
-        bodyColor: "#333333",
-        fontFamily: "Tahoma, sans-serif",
-        costColor: "#000000"
-      },
-      { // Pansexual theme
-        name: "Pansexual",
-        bodyBackground: "linear-gradient(to right, #FF218C, #FFD800, #21B1FF)",
-        bodyColor: "#000000",
-        fontFamily: "Courier New, monospace",
-        costColor: "#000000"
-      },
-      { // Flaming Pride
-        name: "Flaming Pride",
-        bodyBackground: "linear-gradient(to right, #ff5f6d, #ffc371)",
-        bodyColor: "#000000",
-        fontFamily: "Lucida Console, monospace",
-        costColor: "#000000"
-      },
-      { // LGBT Mosaic (adjusted for contrast)
-        name: "LGBT Mosaic",
-        bodyBackground: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
-        bodyColor: "#000000",
-        fontFamily: "Trebuchet MS, sans-serif",
-        costColor: "#000000"
-      }
-    ];
-    
-    let currentThemeIndex = 0;
-    
-    // --- Theme Functions ---
-    function applyTheme(theme) {
-      document.body.style.background = theme.bodyBackground;
-      document.body.style.color = theme.bodyColor;
-      document.body.style.fontFamily = theme.fontFamily;
-      costDisplay.style.color = theme.costColor;
-      timeDisplay.style.color = theme.costColor;
-      // Update footer buttons so they contrast with the background
-      const buttons = document.querySelectorAll('.footer button');
-      buttons.forEach(button => {
-        button.style.background = theme.costColor;
-        button.style.color = theme.bodyColor;
-      });
-    }
-    
-    function cycleTheme() {
-      currentThemeIndex = (currentThemeIndex + 1) % themes.length;
-      applyTheme(themes[currentThemeIndex]);
-    }
-    
-    // Tap on the time display to change themes
-    timeDisplay.addEventListener("click", cycleTheme);
+    const bgMusic = document.getElementById("bgMusic");
     
     // --- Stopwatch and Display Update ---
     function updateDisplay() {
@@ -235,7 +182,7 @@
       let minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
       let seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
       
-      // Format the time as "HHh MMm SSs"
+      // Format time as "HHh MMm SSs"
       timeDisplay.textContent =
         String(hours).padStart(2, '0') + "h " +
         String(minutes).padStart(2, '0') + "m " +
@@ -253,7 +200,7 @@
         costDisplay.textContent = "£" + cost.toFixed(2);
       }
       
-      // Flash a warning if the cost reaches 50p or more (i.e. cost in pounds ≥ 0.50)
+      // Flash a warning if cost ≥ 50p (i.e., cost in pounds ≥ 0.50)
       if (cost >= 0.50) {
         document.body.classList.add('warning');
         costDisplay.classList.add('warning');
@@ -265,10 +212,19 @@
     
     // --- Button Functionality ---
     startBtn.addEventListener("click", function() {
+      // Only allow starting if device is in landscape
+      if (window.innerWidth < window.innerHeight) {
+        alert("Please rotate your screen to landscape to begin.");
+        return;
+      }
       startTime = Date.now();
       timerInterval = setInterval(updateDisplay, 50); // update every 50ms
       startBtn.disabled = true;
       stopBtn.disabled = false;
+      // Start playing the music (user gesture allows autoplay)
+      bgMusic.play().catch(err => {
+        console.error("Error playing audio:", err);
+      });
     });
     
     stopBtn.addEventListener("click", function() {
@@ -276,6 +232,8 @@
       elapsedTime += Date.now() - startTime;
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      // Optionally, pause the music when stopped
+      bgMusic.pause();
     });
     
     resetBtn.addEventListener("click", function() {
@@ -287,10 +245,10 @@
       costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
+      // Reset the music playback
+      bgMusic.pause();
+      bgMusic.currentTime = 0;
     });
-    
-    // Apply the initial theme
-    applyTheme(themes[currentThemeIndex]);
   </script>
 </body>
 </html>
