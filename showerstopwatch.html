@@ -2,74 +2,75 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <!-- Ensure the layout is responsive on mobile devices -->
+  <!-- Ensures the layout is responsive on mobile devices -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
   <style>
-    /* Overall page styling with a water-inspired gradient */
+    /* Base styles */
     body {
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #a0d8ef, #f0f8ff);
+      font-family: sans-serif;
+      /* Default water-inspired background */
+      background: #a0d8ef;
       color: #333;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      transition: background-color 0.3s;
+      transition: background 0.3s, color 0.3s, font-family 0.3s;
     }
     
-    /* Main container fills the screen and uses flexbox to separate the display and buttons */
+    /* Container for the main display; bottom padding prevents overlap with fixed footer */
     .container {
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       width: 100%;
-    }
-    
-    /* Display area: ensure children span full width */
-    .display {
-      text-align: center;
-      margin-top: 20px;
-      flex-grow: 1;
       display: flex;
       flex-direction: column;
       justify-content: center;
-      /* Use stretch so that children (like the cost display) span full width */
-      align-items: stretch;
-      width: 100%;
+      align-items: center;
+      padding-bottom: 80px;
     }
     
-    /* Time display styling (centered and full width) */
-    #time {
-      font-size: 2em;
-      margin-bottom: 20px;
+    /* Display area takes full width */
+    .display {
+      width: 100%;
       text-align: center;
+      padding: 20px;
+    }
+    
+    /* Time display (clickable to change themes) */
+    #time {
+      font-size: 4vw;
+      margin-bottom: 10px;
+      cursor: pointer;
       width: 100%;
     }
     
-    /* Cost display: large, scales with viewport width, and takes up full width */
+    /* Cost display: large text that scales with viewport width */
     #cost {
-      font-size: 20vw; /* Adjusts dynamically based on viewport width */
+      font-size: 10vw;
       width: 100%;
       padding: 20px 0;
       text-align: center;
-      box-sizing: border-box;
     }
     
-    /* Footer for the control buttons at the bottom */
+    /* Fixed footer so the buttons remain visible at all times */
     .footer {
-      text-align: center;
-      padding: 10px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
       background: #e0f7fa;
-      box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      padding: 10px 0;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+      z-index: 100;
     }
     
     /* Button styling */
     .footer button {
       font-size: 1.2em;
-      margin: 10px;
+      margin: 5px;
       padding: 10px 20px;
       border: none;
       border-radius: 5px;
@@ -94,7 +95,6 @@
       50% { background-color: #ffcccc; }
     }
     
-    /* The "warning" class triggers the flashing animation */
     .warning {
       animation: flash 1s infinite;
     }
@@ -102,57 +102,160 @@
 </head>
 <body>
   <div class="container">
-    <!-- Display area: shows the running time and cost -->
     <div class="display">
-      <div id="time">00:00:00</div>
-      <div id="cost">£0.00</div>
-    </div>
-    <!-- Footer: holds the control buttons, which always remain at the bottom -->
-    <div class="footer">
-      <button id="startBtn">Start</button>
-      <button id="stopBtn" disabled>Stop</button>
-      <button id="resetBtn">Reset</button>
+      <div id="time">00:00:00.000</div>
+      <div id="cost">0.00p</div>
     </div>
   </div>
-
+  <div class="footer">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <button id="resetBtn">Reset</button>
+  </div>
+  
   <script>
-    // Track start time, accumulated elapsed time, and the timer interval.
+    // --- Timer and Cost Calculation Variables ---
     let startTime, elapsedTime = 0, timerInterval;
-
-    // Cost Calculation:
-    // A 29 kW boiler costs 6.41p/kWh which is about £1.8589 per hour.
-    // Cost per second = £1.8589 / 3600 ≈ £0.0005164 per second.
+    // The boiler: 29 kW at 6.41p/kWh gives about £1.8589 per hour.
+    // Thus, cost per second in pounds:
     const costPerSecond = 1.8589 / 3600;
-
-    // Get DOM elements
+    
     const timeDisplay = document.getElementById("time");
     const costDisplay = document.getElementById("cost");
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
-
-    // Update the stopwatch display and cost
+    
+    // --- Themes Array (10 Themes) ---
+    const themes = [
+      { // Cats theme
+        name: "Cats",
+        bodyBackground: "#fdf6e3",
+        bodyColor: "#657b83",
+        fontFamily: "'Comic Sans MS', cursive",
+        costColor: "#b58900"
+      },
+      { // Wicked theme
+        name: "Wicked",
+        bodyBackground: "#004225",
+        bodyColor: "#fefefe",
+        fontFamily: "Georgia, serif",
+        costColor: "#ff4500"
+      },
+      { // Lady Gaga theme
+        name: "Lady Gaga",
+        bodyBackground: "#ff4081",
+        bodyColor: "#ffffff",
+        fontFamily: "Impact, sans-serif",
+        costColor: "#000000"
+      },
+      { // Rainbow Pride
+        name: "Rainbow Pride",
+        bodyBackground: "linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)",
+        bodyColor: "#ffffff",
+        fontFamily: "Arial, sans-serif",
+        costColor: "#000000"
+      },
+      { // Trans Pride
+        name: "Trans Pride",
+        bodyBackground: "linear-gradient(to right, #5BCEFA, #F5A9B8, #ffffff, #F5A9B8, #5BCEFA)",
+        bodyColor: "#333333",
+        fontFamily: "Helvetica, sans-serif",
+        costColor: "#000000"
+      },
+      { // Bisexual theme
+        name: "Bisexual",
+        bodyBackground: "linear-gradient(to right, #D60270, #9B4F96, #0038A8)",
+        bodyColor: "#ffffff",
+        fontFamily: "Verdana, sans-serif",
+        costColor: "#ffffff"
+      },
+      { // Non-Binary theme
+        name: "Non-Binary",
+        bodyBackground: "linear-gradient(to right, #FFF430, #FFFFFF, #9C59D1)",
+        bodyColor: "#333333",
+        fontFamily: "Tahoma, sans-serif",
+        costColor: "#000000"
+      },
+      { // Pansexual theme
+        name: "Pansexual",
+        bodyBackground: "linear-gradient(to right, #FF218C, #FFD800, #21B1FF)",
+        bodyColor: "#000000",
+        fontFamily: "Courier New, monospace",
+        costColor: "#000000"
+      },
+      { // Flaming Pride
+        name: "Flaming Pride",
+        bodyBackground: "linear-gradient(to right, #ff5f6d, #ffc371)",
+        bodyColor: "#000000",
+        fontFamily: "Lucida Console, monospace",
+        costColor: "#000000"
+      },
+      { // LGBT Mosaic
+        name: "LGBT Mosaic",
+        bodyBackground: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
+        bodyColor: "#ffffff",
+        fontFamily: "Trebuchet MS, sans-serif",
+        costColor: "#ffffff"
+      }
+    ];
+    
+    let currentThemeIndex = 0;
+    
+    // --- Theme Functions ---
+    function applyTheme(theme) {
+      document.body.style.background = theme.bodyBackground;
+      document.body.style.color = theme.bodyColor;
+      document.body.style.fontFamily = theme.fontFamily;
+      costDisplay.style.color = theme.costColor;
+      timeDisplay.style.color = theme.costColor;
+      // Update footer buttons so they contrast with the background
+      const buttons = document.querySelectorAll('.footer button');
+      buttons.forEach(button => {
+        button.style.background = theme.costColor;
+        button.style.color = theme.bodyColor;
+      });
+    }
+    
+    function cycleTheme() {
+      currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+      applyTheme(themes[currentThemeIndex]);
+    }
+    
+    // Tap on the time display to change themes
+    timeDisplay.addEventListener("click", cycleTheme);
+    
+    // --- Stopwatch and Display Update ---
     function updateDisplay() {
       let currentTime = Date.now();
       let timeElapsed = (currentTime - startTime) + elapsedTime;
-
-      // Convert milliseconds into hours, minutes, seconds.
+      
+      // Calculate hours, minutes, seconds, and milliseconds
       let hours = Math.floor(timeElapsed / (1000 * 60 * 60));
       let minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
       let seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-
-      // Update the time display (always with two digits per unit)
+      let milliseconds = timeElapsed % 1000;
+      
+      // Format the time as HH:MM:SS.mmm
       timeDisplay.textContent =
         String(hours).padStart(2, '0') + ":" +
         String(minutes).padStart(2, '0') + ":" +
-        String(seconds).padStart(2, '0');
-
-      // Calculate energy cost based on total seconds elapsed
+        String(seconds).padStart(2, '0') + "." +
+        String(milliseconds).padStart(3, '0');
+      
+      // Calculate energy cost (in pounds)
       let totalSeconds = timeElapsed / 1000;
       let cost = totalSeconds * costPerSecond;
-      costDisplay.textContent = "£" + cost.toFixed(2);
-
-      // If the cost is over £0.50, add a flashing warning to the screen and cost display.
+      
+      // If cost is less than £1, display as pence with two decimals; else as pounds
+      if (cost < 1) {
+        let pence = (cost * 100).toFixed(2);
+        costDisplay.textContent = pence + "p";
+      } else {
+        costDisplay.textContent = "£" + cost.toFixed(2);
+      }
+      
+      // Flash a warning if the cost reaches 50p or more (i.e. cost in pounds ≥ 0.50)
       if (cost >= 0.50) {
         document.body.classList.add('warning');
         costDisplay.classList.add('warning');
@@ -161,34 +264,35 @@
         costDisplay.classList.remove('warning');
       }
     }
-
-    // Start button functionality
+    
+    // --- Button Functionality ---
     startBtn.addEventListener("click", function() {
       startTime = Date.now();
-      timerInterval = setInterval(updateDisplay, 1000); // update every second
+      timerInterval = setInterval(updateDisplay, 50); // update every 50ms
       startBtn.disabled = true;
       stopBtn.disabled = false;
     });
-
-    // Stop button functionality
+    
     stopBtn.addEventListener("click", function() {
       clearInterval(timerInterval);
       elapsedTime += Date.now() - startTime;
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
-
-    // Reset button functionality
+    
     resetBtn.addEventListener("click", function() {
       clearInterval(timerInterval);
       elapsedTime = 0;
-      timeDisplay.textContent = "00:00:00";
-      costDisplay.textContent = "£0.00";
+      timeDisplay.textContent = "00:00:00.000";
+      costDisplay.textContent = "0.00p";
       document.body.classList.remove('warning');
       costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
     });
+    
+    // Apply the initial theme
+    applyTheme(themes[currentThemeIndex]);
   </script>
 </body>
 </html>
