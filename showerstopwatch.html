@@ -48,12 +48,15 @@
       padding: 20px 0;
       text-align: center;
     }
-    /* SoundCloud player container – hidden by default */
+    /* SoundCloud player container – initially hidden but rendered */
     #sc-player-container {
-      display: none;
       width: 100%;
       max-width: 400px;
       margin: 20px auto;
+      overflow: hidden;
+      visibility: hidden;
+      height: 0;
+      transition: visibility 0s, height 0.5s;
     }
     /* Fixed footer so the buttons always remain visible */
     .footer {
@@ -138,7 +141,7 @@
       <div id="time">00h 00m 00s</div>
       <div id="cost">0.00p</div>
     </div>
-    <!-- SoundCloud Player Container (hidden by default) -->
+    <!-- SoundCloud Player Container -->
     <div id="sc-player-container">
       <iframe id="sc-player-iframe" 
               width="100%" 
@@ -146,7 +149,7 @@
               scrolling="no" 
               frameborder="no" 
               allow="autoplay"
-              src="https://w.soundcloud.com/player/?url=https%3A//on.soundcloud.com/BryMGUqFBBU1MZkS8&auto_play=false&loop=true&color=%23ffffff&show_artwork=false&buying=false&liking=false&download=false&sharing=false">
+              src="https://w.soundcloud.com/player/?url=https%3A//on.soundcloud.com/BryMGUqFBBU1MZkS8&auto_play=false&loop=true&color=%23ffffff&show_artwork=false">
       </iframe>
     </div>
   </div>
@@ -185,9 +188,10 @@
     const startBtn = document.getElementById("startBtn");
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
+    
     // Global variable for the SoundCloud widget
     let scWidget;
-
+    
     // --- Stopwatch and Display Update ---
     function updateDisplay() {
       let currentTime = Date.now();
@@ -238,16 +242,16 @@
       startBtn.disabled = true;
       stopBtn.disabled = false;
       
-      // Show the SoundCloud player container if not already visible
+      // Show the SoundCloud player container by making it visible and restoring its height
       const scContainer = document.getElementById("sc-player-container");
-      if (scContainer.style.display === "none") {
-        scContainer.style.display = "block";
-      }
+      scContainer.style.visibility = "visible";
+      scContainer.style.height = "80px";
+      
       // Initialize the SoundCloud widget if not done already
       if (!scWidget) {
         scWidget = SC.Widget(document.getElementById('sc-player-iframe'));
       }
-      // Start playing the track
+      // Start playing the track via the widget
       scWidget.play();
     });
     
@@ -271,13 +275,15 @@
       costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Pause and reset the SoundCloud track
+      // Pause and reset the SoundCloud track playback
       if (scWidget) {
         scWidget.pause();
         scWidget.seekTo(0);
       }
       // Optionally, hide the player again on reset
-      document.getElementById("sc-player-container").style.display = "none";
+      const scContainer = document.getElementById("sc-player-container");
+      scContainer.style.visibility = "hidden";
+      scContainer.style.height = "0";
     });
   </script>
 </body>
