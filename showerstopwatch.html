@@ -5,16 +5,16 @@
   <!-- Ensure a responsive layout -->
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Shower Energy Cost Stopwatch</title>
-  <!-- SoundCloud Widget API -->
-  <script src="https://w.soundcloud.com/player/api.js"></script>
+  <!-- Load the YouTube IFrame API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
   <style>
-    /* Base styles for the fixed pink theme */
+    /* Base styles for a fixed pink theme */
     body {
       margin: 0;
       padding: 0;
       font-family: "Impact", sans-serif;
-      background: #ff4081; /* Pink background */
-      color: #ffffff;      /* White text */
+      background: #ff4081;  /* Pink background */
+      color: #ffffff;       /* White text */
       display: flex;
       flex-direction: column;
       height: 100vh;
@@ -35,7 +35,7 @@
       text-align: center;
       padding: 20px;
     }
-    /* Time display: labeled with h, m, s */
+    /* Time display: shows "HHh MMm SSs" */
     #time {
       font-size: 4vw;
       margin-bottom: 10px;
@@ -48,17 +48,7 @@
       padding: 20px 0;
       text-align: center;
     }
-    /* SoundCloud player container – initially hidden but rendered */
-    #sc-player-container {
-      width: 100%;
-      max-width: 400px;
-      margin: 20px auto;
-      overflow: hidden;
-      visibility: hidden;
-      height: 0;
-      transition: visibility 0s, height 0.5s;
-    }
-    /* Fixed footer so the buttons always remain visible */
+    /* Fixed footer so that the buttons are always visible */
     .footer {
       position: fixed;
       bottom: 0;
@@ -89,7 +79,7 @@
     .footer button:hover:not(:disabled) {
       background: #f0f0f0;
     }
-    /* Flashing warning if cost ≥ 50p (i.e., cost in pounds ≥ 0.50) */
+    /* Flashing warning if cost ≥ 50p (i.e. cost in pounds ≥ 0.50) */
     @keyframes flash {
       0%, 100% { background-color: inherit; }
       50% { background-color: #ffcccc; }
@@ -123,6 +113,15 @@
       font-size: 1.5em;
       margin: 0;
     }
+    /* Hidden YouTube player container (positioned off-screen) */
+    #ytplayer {
+      position: absolute;
+      top: -1000px;
+      left: -1000px;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+    }
   </style>
 </head>
 <body>
@@ -141,46 +140,45 @@
       <div id="time">00h 00m 00s</div>
       <div id="cost">0.00p</div>
     </div>
-    <!-- SoundCloud Player Container -->
-    <div id="sc-player-container">
-      <iframe id="sc-player-iframe" 
-              width="100%" 
-              height="80" 
-              scrolling="no" 
-              frameborder="no" 
-              allow="autoplay"
-              src="https://w.soundcloud.com/player/?url=https%3A//on.soundcloud.com/BryMGUqFBBU1MZkS8&auto_play=false&loop=true&color=%23ffffff&show_artwork=false">
-      </iframe>
-    </div>
   </div>
-  
   <div class="footer">
     <button id="startBtn">Start</button>
     <button id="stopBtn" disabled>Stop</button>
     <button id="resetBtn">Reset</button>
   </div>
   
+  <!-- Hidden YouTube player container -->
+  <div id="ytplayer"></div>
+  
   <script>
-    // --- Orientation Check: Show/hide rotate overlay ---
-    function checkOrientation() {
-      const overlay = document.getElementById("rotateOverlay");
-      if (window.innerWidth < window.innerHeight) {
-        // Portrait mode: show overlay
-        overlay.style.display = "flex";
-      } else {
-        // Landscape mode: hide overlay
-        overlay.style.display = "none";
-      }
+    // --- YouTube Player Setup ---
+    // The video ID from your link (https://youtu.be/vBynw9Isr28) is "vBynw9Isr28".
+    var player;
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('ytplayer', {
+        videoId: 'vBynw9Isr28',  // Video ID from your YouTube link.
+        playerVars: {
+          'autoplay': 0,
+          'controls': 0,
+          'modestbranding': 1,
+          'rel': 0,
+          'showinfo': 0,
+          'playsinline': 1
+        },
+        events: {
+          'onReady': onPlayerReady
+        }
+      });
     }
-    window.addEventListener("resize", checkOrientation);
-    window.addEventListener("orientationchange", checkOrientation);
-    checkOrientation(); // Check on load
-
-    // --- Timer and Cost Calculation Variables ---
+    function onPlayerReady(event) {
+      // The player is ready; it will be triggered to play when Start is pressed.
+    }
+    
+    // --- Stopwatch and Cost Calculation Variables ---
     let startTime, elapsedTime = 0, timerInterval;
     // Calculation:
     // 29 kW boiler at 6.41p/kWh ≈ £1.8589 per hour
-    // => Cost per second (in pounds): 1.8589/3600
+    // => Cost per second in pounds:
     const costPerSecond = 1.8589 / 3600;
     
     const timeDisplay = document.getElementById("time");
@@ -189,10 +187,6 @@
     const stopBtn = document.getElementById("stopBtn");
     const resetBtn = document.getElementById("resetBtn");
     
-    // Global variable for the SoundCloud widget
-    let scWidget;
-    
-    // --- Stopwatch and Display Update ---
     function updateDisplay() {
       let currentTime = Date.now();
       let timeElapsed = (currentTime - startTime) + elapsedTime;
@@ -230,6 +224,21 @@
       }
     }
     
+    // --- Orientation Check ---
+    function checkOrientation() {
+      const overlay = document.getElementById("rotateOverlay");
+      if (window.innerWidth < window.innerHeight) {
+        // Portrait mode: show overlay
+        overlay.style.display = "flex";
+      } else {
+        // Landscape mode: hide overlay
+        overlay.style.display = "none";
+      }
+    }
+    window.addEventListener("resize", checkOrientation);
+    window.addEventListener("orientationchange", checkOrientation);
+    checkOrientation(); // Run on load
+    
     // --- Button Functionality ---
     startBtn.addEventListener("click", function() {
       // Only allow starting if device is in landscape
@@ -242,17 +251,10 @@
       startBtn.disabled = true;
       stopBtn.disabled = false;
       
-      // Show the SoundCloud player container by making it visible and restoring its height
-      const scContainer = document.getElementById("sc-player-container");
-      scContainer.style.visibility = "visible";
-      scContainer.style.height = "80px";
-      
-      // Initialize the SoundCloud widget if not done already
-      if (!scWidget) {
-        scWidget = SC.Widget(document.getElementById('sc-player-iframe'));
+      // Play the YouTube video (triggered by user gesture)
+      if (player && typeof player.playVideo === "function") {
+        player.playVideo();
       }
-      // Start playing the track via the widget
-      scWidget.play();
     });
     
     stopBtn.addEventListener("click", function() {
@@ -260,9 +262,9 @@
       elapsedTime += Date.now() - startTime;
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Pause the SoundCloud track
-      if (scWidget) {
-        scWidget.pause();
+      // Pause the YouTube video
+      if (player && typeof player.pauseVideo === "function") {
+        player.pauseVideo();
       }
     });
     
@@ -275,15 +277,11 @@
       costDisplay.classList.remove('warning');
       startBtn.disabled = false;
       stopBtn.disabled = true;
-      // Pause and reset the SoundCloud track playback
-      if (scWidget) {
-        scWidget.pause();
-        scWidget.seekTo(0);
+      // Pause and reset the YouTube video playback
+      if (player && typeof player.pauseVideo === "function") {
+        player.pauseVideo();
+        player.seekTo(0);
       }
-      // Optionally, hide the player again on reset
-      const scContainer = document.getElementById("sc-player-container");
-      scContainer.style.visibility = "hidden";
-      scContainer.style.height = "0";
     });
   </script>
 </body>
